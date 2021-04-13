@@ -1,0 +1,144 @@
+﻿@model HomeViewModel
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Transacciones</h1>
+    @*<p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>*@
+</div>
+
+<div id="AlertError" class="alert alert-danger alert-dismissible collapse" role="alert">
+    @if (Model.Error != null)
+    {
+        <span>@Model.Error</span>
+    }
+    else
+    {
+        <span>Se ha producido un error</span>
+    }
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<div id="AlertSuccess" class="alert alert-success alert-dismissible collapse" role="alert">
+    <span>Se guardaron los datos correctamente</span>
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+
+<div class="container-fluid py-5">
+    <form class="form-group" id="AjaxForm">
+
+        <div class="row py-3">
+            <label class="text-dark pr-3 col-md-3">
+                Nombre del cliente:
+            </label>
+            <span class="col-md-4">
+                @Html.DropDownListFor(model => model.selectedClienteId, Model.clientes.Select(clientes => new SelectListItem()
+                  {
+                      Text = clientes.NombreApellido,
+                      Value = clientes.IdCliente.ToString(),
+                      Selected = false
+                  }), new { @class = "dropdown form-control" })
+            </span>
+
+        </div>
+        <div class="row pb-3">
+            <label class="text-dark pr-3 col-md-3">
+                Nombre del producto:
+            </label>
+            <span class="col-md-4">
+                @Html.DropDownListFor(model => model.selectedProductoId, Model.articulos.Select(articulos => new SelectListItem()
+                    {
+                        Text = articulos.Articulo1,
+                        Value = articulos.IdArticulo.ToString(),
+                        Selected = false
+                    }), new { @class = "dropdown form-control", @id = "ddlArticulo" })
+            </span>
+        </div>
+        <div class="row pb-3">
+            <label class="text-dark pr-3 col-md-3">
+                Precio x unidad:
+            </label>
+            <span class="col-md-4">
+                <input class="form-control" type="text" value="$ @Model.articulos.Select(a=>a.Precio).FirstOrDefault().ToString()" id="precioUnidad" disabled="disabled" />
+            </span>
+        </div>
+        <div class="row pb-3">
+            <label class="text-dark pr-3 col-md-3">
+                Ingrese Cantidad:
+            </label>
+            <span class="col-md-4">
+                <input class="form-control" type="number" min="1" value="1" id="cantidadUnidad" />
+            </span>
+        </div>
+        <div class="row py-3 justify-content-center">
+            <span class="col-md-2">
+                <input type="submit" id="btnSave" value="Guardar" class="btn btn-info form-control" onclick="" />
+            </span>
+        </div>
+       
+        <div class="row py-3">
+            <label class="text-dark pr-3 col-md-3">
+                Precio total a pagar:
+            </label>
+            <label id="lblTotal" class="text-dark pr-3 col-md-3">
+            </label>
+        </div>
+       
+
+    </form>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.slim.js"
+        integrity="sha256-HwWONEZrpuoh951cQD1ov2HUK5zA5DwJ1DNUXaM6FsY="
+        crossorigin="anonymous"></script>
+<script>
+    var valor_inicial = '';
+
+    $('#ddlArticulo').on('change', function () {
+        var IdArticulo = $('#ddlArticulo').val();
+         $.ajax({
+            url: "@Url.Action("GetPrecioArticulo", "Home")",
+            data: {
+                IdArticulo: IdArticulo,
+            },
+            type: "POST",
+
+        })
+            .done(function (result) {
+                if (result != null || result != "") {
+                    $('#precioUnidad').val("$ "+result.precioUnidad);
+                } else {
+                 Alert("Se ha producido un error")
+                }
+            });
+    });
+
+     $("#AjaxForm").submit(function (e) {
+        e.preventDefault();
+        $("#btnSave").prop("disabled", true);
+
+        $.ajax({
+            url: "@Url.Action("Save", "Home")",
+            data: {
+                IdCliente: $("#selectedClienteId").val(),
+                IdArticulo: $('#ddlArticulo').val(),
+                cantidadUnidad: $('#cantidadUnidad').val(),
+            },
+            type: "POST",
+
+            })
+            .done(function (result) {
+                if (result.isCorrect) {
+                    $("#AlertSuccess").show();
+                    $("#lblTotal").text("$ "+result.precioTotal);
+                    $("#btnSave").prop("disabled", false);
+                } else {
+                    $("#AlertError").show();
+                    $("#btnSave").prop("disabled", false);
+                }
+            });
+    });
+</script>
